@@ -229,9 +229,11 @@ class HumanAgent(Agent):
                 return move, dump[0], 0
 
 class SimpleFantasyLikeOneBoard(Agent):
-    def __init__(self, n_decks=100):
+    def __init__(self, n_decks=100, no_random:bool = False, ret_action: bool = False):
         super().__init__()
         self.n_decks = n_decks
+        self.no_random = no_random
+        self.ret_action = ret_action
     def act(self, env: Environment, time_limit=False):
         root_state = StateOneBoard(env)
         deck = env.visible_deck()
@@ -242,7 +244,10 @@ class SimpleFantasyLikeOneBoard(Agent):
 
         start = time.time()
         for _ in range(self.n_decks // 8):
-            cards = random.sample(deck, 8 - 2*env.n_move + (env.n_move == 3))
+            if self.no_random:
+                cards = deck[:8 - 2*env.n_move]
+            else:
+                cards = random.sample(deck, 8 - 2*env.n_move)
             for act in root_state.get_possible_actions():
                 child_state = root_state.take_action(act)
                 ref_board = child_state.env.board1 if child_state.env.first_player else child_state.env.board2
@@ -267,14 +272,16 @@ class SimpleFantasyLikeOneBoard(Agent):
             
             if time_limit and time.time() - start > time_limit:
                 break
+        
+        if actions_scores:
+            best_scores = sorted(actions_scores.items(), key=lambda x: x[1], reverse=True)
+            best_actions = []
+            for h, _ in best_scores[:(5 if len(root_state.get_possible_actions()) < 30 else 6)]:
+                best_actions.append(actions_hash[h])
+        else:
+            best_actions = list(actions_hash.values())
 
-        best_scores = sorted(actions_scores.items(), key=lambda x: x[1], reverse=True)
-        best_actions = []
-        for h, score in best_scores[:(5 if len(root_state.get_possible_actions()) < 30 else 6)]:
-            best_actions.append(actions_hash[h])
-
-
-        for _ in range( 7 * self.n_decks // 8):
+        for _ in range(max(7 * self.n_decks // 8, 1)):
             cards = random.sample(deck, 8 - 2*env.n_move)
             for act in best_actions:
                 child_state = root_state.take_action(act)
@@ -301,14 +308,15 @@ class SimpleFantasyLikeOneBoard(Agent):
             if time_limit and time.time() - start > time_limit:
                 break
         
-        sorted_scores = sorted(actions_scores.items(), key=lambda x:x[1], reverse=True)
+        '''sorted_scores = sorted(actions_scores.items(), key=lambda x:x[1], reverse=True)
         for act, score in sorted_scores[:5]:
-            print(actions_hash[act], np.round(score / self.n_decks, 3))
+            print(actions_hash[act], np.round(score / self.n_decks, 3))'''
         best_hash = max(actions_scores.items(), key=lambda x: x[1])[0]
         best_score = actions_scores[best_hash] / self.n_decks
         best_action = actions_hash[best_hash]
         dump_card = [x for x in env.hand if x not in best_action.upper + best_action.middle + best_action.bottom]
-
+        if self.ret_action:
+            return best_action
 
         if dump_card:
             return best_action.streets(), dump_card[0], best_score

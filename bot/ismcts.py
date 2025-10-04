@@ -143,6 +143,10 @@ class ISMCTS:
                 best_mean = ainfo['value']
                 best_action = ainfo['action']
 
+        '''sorted_scores = sorted(root_node.actions.items(), key=lambda x:x[1]['value'], reverse=True)
+        for ah, ainfo in sorted_scores[:5]:
+            print(ainfo['action'], round(ainfo['value'], 3))'''
+
         return best_action.streets()
     
 
