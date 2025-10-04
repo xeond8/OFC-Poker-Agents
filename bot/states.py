@@ -25,6 +25,9 @@ class Action():
 class State():
     def __init__(self, env: Environment):
         self.env = env
+    
+    def clone(self):
+        return State(self.env.copy())
 
     def get_possible_actions(self):
         if self.env.n_move == 0:
@@ -80,6 +83,9 @@ class State():
 class StateOneBoard():
     def __init__(self, env: Environment):
         self.env = env
+
+    def clone(self):
+        return StateOneBoard(self.env.copy()) 
 
     def get_possible_actions(self):
         if self.env.n_move == 0:

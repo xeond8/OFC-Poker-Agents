@@ -57,6 +57,20 @@ class Board:
 
         self.n_move = n_move
 
+    def copy(self):
+        new_board = Board(
+            upper=list(self.upper),
+            middle=list(self.middle),
+            bottom=list(self.bottom),
+            n_move=self.n_move
+        )
+        new_board.upper_eval = self.upper_eval
+        new_board.middle_eval = self.middle_eval
+        new_board.bottom_eval = self.bottom_eval
+        new_board.roaylties = self.roaylties
+        new_board.dead = self.dead
+        return new_board
+
     def evaluate_upper(self):
         if len(self.upper) < 3:
             return 0
@@ -181,7 +195,7 @@ class Board:
 class Environment:
     def __init__(self, board1: Board = None, board2: Board = None, dump1: list = None, dump2: list = None,
                  hand: list = None, deck: list = None, n_move: int = 0, first_player: bool = True, text: bool = True,
-                 print_score: bool = False, print_dump: int = 0):
+                 print_score: bool = False, print_hand: bool = True, print_dump: int = 0):
         self.board1 = board1 if board1 is not None else Board()
         self.board2 = board2 if board2 is not None else Board()
         self.dump1 = dump1 if dump1 is not None else []
@@ -193,7 +207,24 @@ class Environment:
         self.text = text
         self.print_score = print_score
         self.print_dump = print_dump  # 0 - all, 1 - first, 2 - second
+        self.print_hand = print_hand
         self.antifantasy = False
+
+    def copy(self):
+        return Environment(
+            board1=self.board1.copy(),
+            board2=self.board2.copy(),
+            dump1=list(self.dump1),
+            dump2=list(self.dump2),
+            hand=list(self.hand),
+            deck=list(self.deck),
+            n_move=self.n_move,
+            first_player=self.first_player,
+            text=self.text,
+            print_score=self.print_score,
+            print_hand=self.print_hand,
+            print_dump=self.print_dump
+        )
 
     def visible_deck(self):
         return [x for x in self.deck if x not in self.board1.upper + self.board1.middle + self.board1.bottom + self.board2.upper + self.board2.middle + self.board2.bottom + (
@@ -232,6 +263,11 @@ class Environment:
             if self.text:
                 s += "Score: \n"
             s += f"{n} : {-n}"
+        
+        if self.print_hand:
+            if self.text:
+                s += "Hand: \n"
+            s += ''.join([Card.int_to_pretty_str(card) for card in self.hand]) + "\n"
         return s
 
     def score_calc(self):
@@ -281,6 +317,7 @@ class Environment:
             self.antifantasy = True
             self.first_player = True
             self.n_move = 0 if b1_n_cards == 0 else (b1_n_cards - 3) // 2
+        self.deck = self.visible_deck()
 
 def streets_to_str(streets: list, end="\n"):
     s = ""
